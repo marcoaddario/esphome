@@ -1,0 +1,422 @@
+esphome:
+  name: ttgo_weather
+  platform: ESP32
+  board: ttgo-t1
+
+web_server:
+  port: 80    
+
+wifi:
+  ssid: !secret WIFI_SSID
+  password: !secret WIFI_Password
+
+# Enable logging
+logger:
+  level: debug
+
+# Enable OTA updates
+ota:
+  password: !secret OTA_Password
+
+# Enable Home Assistant API
+api:
+  
+globals:
+  - id: ha_online
+    type: bool
+    initial_value: 'false'
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO19
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: True
+  
+# (Fonts - folder 'images')
+font:
+
+  - file: 'fonts/BebasNeue-Regular.ttf'
+    id: font2
+    size: 85
+# - file: 'fonts/Arial-Black.ttf'
+#    id: font3
+#    size: 30
+#  - file: 'fonts/BebasNeue-Regular.ttf'
+#    id: font4
+#    size: 40
+  - file: 'fonts/TahomaRegular.ttf'
+    id: taoma20
+    size: 20
+  - file: 'fonts/TahomaRegular.ttf'
+    id: taoma30
+    size: 30
+  - file: 'fonts/TahomaRegular.ttf'
+    id: taoma40
+    size: 40
+    glyphs: '!"%()+,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'
+  
+
+#Icons 128x128 (folder 'images')
+image:
+#0-default.png
+  - file: "images/0-default.png"
+    id: wpng_0
+    type: RGB24
+#1-clear-night.png
+  - file: "images/1-clear-night.png"
+    id: wpng_1
+    type: RGB24
+#2-cloudy.png
+  - file: "images/2-cloudy.png"
+    id: wpng_2
+    type: RGB24
+#3-fog.png
+  - file: "images/3-fog.png"
+    id: wpng_3
+    type: RGB24
+#4-hail.png
+  - file: "images/4-hail.png"
+    id: wpng_4
+    type: RGB24
+#5-lightning.png
+  - file: "images/5-lightning.png"
+    id: wpng_5
+    type: RGB24
+#6-lightning-rainy.png
+  - file: "images/6-lightning-rainy.png"
+    id: wpng_6
+    type: RGB24
+#7-partlycloudy.png
+  - file: "images/7-partlycloudy.png"
+    id: wpng_7
+    type: RGB24
+#8-pouring.png
+  - file: "images/8-pouring.png"
+    id: wpng_8
+    type: RGB24
+#9-rainy.png
+  - file: "images/9-rainy.png"
+    id: wpng_9
+    type: RGB24
+#10-snowy.png
+  - file: "images/10-snowy.png"
+    id: wpng_10
+    type: RGB24
+#11-snowy-rainy.png
+  - file: "images/11-snowy-rainy.png"
+    id: wpng_11
+    type: RGB24
+#12-sunny.png
+  - file: "images/12-sunny.png"
+    id: wpng_12
+    type: RGB24
+#13-windy.png
+  - file: "images/13-windy.png"
+    id: wpng_13
+    type: RGB24
+#14-windy-variant.png
+  - file: "images/14-windy-variant.png"
+    id: wpng_14
+    type: RGB24
+#15-exceptional.png
+  - file: "images/15-exceptional.png"
+    id: wpng_15
+    type: RGB24
+# home assistant link
+  - file: images/ha.png
+    id: ha_ok
+    type: RGB24
+# home assistant no link
+  - file: images/ha_offline.png
+    id: ha_ko
+    type: RGB24
+# Heating ON
+  - file: images/heatingon.png
+    id: imgHeatingOn
+    type: RGB24
+    
+  
+display:
+  - platform: st7789v
+    id: st7789vdisplay
+    reset_pin: GPIO23
+    dc_pin: GPIO16
+    cs_pin: GPIO5
+    backlight_pin: GPIO4
+    brightness: 25%
+    update_interval: 5s
+    pages:
+      - id: page1
+        # weather 
+        lambda: |-
+          it.set_rotation(DISPLAY_ROTATION_0_DEGREES);
+
+          //Icon
+          if (id(curent_weather).state == "clear-night")
+          {
+             it.image(5, 5, id(wpng_1));
+          }
+          else if (id(curent_weather).state == "cloudy")
+          {
+             it.image(5, 5, id(wpng_2));
+          }
+          else if (id(curent_weather).state == "partlycloudy")
+          {
+            it.image(5, 5, id(wpng_2));
+          }
+          else if (id(curent_weather).state == "fog")
+          {
+             it.image(5, 5, id(wpng_3));
+          }
+          else if (id(curent_weather).state == "hail")
+          {
+             it.image(5, 5, id(wpng_4));
+          }
+          else if (id(curent_weather).state == "lightning")
+          {
+             it.image(5, 5, id(wpng_5));
+          }
+          else if (id(curent_weather).state == "lightning-rainy")
+          {
+             it.image(5, 5, id(wpng_6));
+          }
+          else if (id(curent_weather).state == "partlycloudy")
+          {
+             it.image(5, 5, id(wpng_7));
+          }
+          else if (id(curent_weather).state == "pouring")
+          {
+             it.image(5, 5, id(wpng_8));
+          }
+          else if (id(curent_weather).state == "rainy")
+          {
+             it.image(5, 5, id(wpng_9));
+          }
+          else if (id(curent_weather).state == "snowy")
+          {
+             it.image(5, 5, id(wpng_10));
+          }
+          else if (id(curent_weather).state == "snowy-rainy'")
+          {
+             it.image(5, 5, id(wpng_11));
+          }
+          else if (id(curent_weather).state == "sunny")
+          {
+             it.image(5, 5, id(wpng_12));
+          }
+          else if (id(curent_weather).state == "windy")
+          {
+             it.image(5, 5, id(wpng_13));
+          }
+          else if (id(curent_weather).state == "windy-variant")
+          {
+             it.image(5, 5, id(wpng_14));
+          }
+          else if (id(curent_weather).state == "exceptional")
+          {
+             it.image(5, 5, id(wpng_15));
+          }
+          else
+          {
+             it.image(5, 5, id(wpng_0));
+          }
+          
+          // HA link status
+          if (id(ha_online) == true)
+          {
+            it.image(1, 1, id(ha_ok));
+          } else {
+            it.image(1, 1, id(ha_ko));
+          }          
+          
+          //Temperature
+          if (id(outside_temperature).has_state()) 
+          {
+            //it.printf(95, 204, id(font2),  0xFFFF, TextAlign::BASELINE_RIGHT, "%.0f°C", id(outside_temperature).state);
+            it.printf(95, 204, id(taoma40),  0xFFFF, TextAlign::BASELINE_RIGHT, "%.0f°C", id(outside_temperature).state);
+          }
+
+          //it.printf(105, 174, id(taoma30),  0xFFFF, "°C");
+          
+          //Time
+          it.strftime(67, 235, id(taoma20), 0x767E, TextAlign::BASELINE_CENTER, "%H:%M", id(esptime).now());
+      - id: page2
+        # thermostat status
+        lambda: |-
+          it.set_rotation(DISPLAY_ROTATION_0_DEGREES);
+          // HA link status
+          if (id(ha_online) == true)
+          {
+            it.image(1, 1, id(ha_ok));
+          } else {
+            it.image(1, 1, id(ha_ko));
+          }
+          
+          // heating on icon
+          if (id(heating_controller).action == CLIMATE_ACTION_HEATING) 
+          {
+            it.image(45, 1, id(imgHeatingOn));
+          }
+          
+          // Thermostat
+
+          it.printf(1, 80, id(taoma40),  0xFFFF, TextAlign::BASELINE_LEFT, "%.1f°C", id(heating_controller).target_temperature);
+          it.printf(10, 85, id(taoma20),  0xFFFF, "Target");
+          
+          it.printf(1, 150, id(taoma40), 0xFFFF, TextAlign::BASELINE_LEFT, "%.1f°C", id(heating_controller).current_temperature);
+          it.printf(10, 155, id(taoma20),  0xFFFF, "Current");
+          
+          
+          
+          auto hcMode = id(heating_controller).mode;
+          
+          
+          switch(hcMode) {
+            case CLIMATE_MODE_OFF:
+              // Off
+              it.printf(1, 210, id(taoma20), 0x8080, TextAlign::BASELINE_LEFT, "OFF");
+              break;
+            case CLIMATE_MODE_AUTO:
+              // Auto
+              it.printf(1, 210, id(taoma20), 0xFC20, TextAlign::BASELINE_LEFT, "AUTO");
+              break;
+            case CLIMATE_MODE_COOL:
+              // Cool
+              it.printf(1, 210, id(taoma20), 0xFFFF, TextAlign::BASELINE_LEFT, "COOL");
+              break;
+            case CLIMATE_MODE_HEAT:
+              // Heat
+              it.printf(1, 210, id(taoma20), 0xF800, TextAlign::BASELINE_LEFT, "HEAT");
+              break;
+            default:
+              // code block
+              it.printf(1, 210, id(taoma20), 0xFFFF, TextAlign::BASELINE_LEFT, "---");
+              break;
+          }
+
+         
+          
+          //Time
+          it.strftime(67, 235, id(taoma20), 0x767E, TextAlign::BASELINE_CENTER, "%H:%M", id(esptime).now());
+          
+      - id: page3
+      # rendering test
+        lambda: |-
+          it.set_rotation(DISPLAY_ROTATION_0_DEGREES);
+          it.printf(1, 50, id(taoma20), 0xFFFF, "AaBbCcDdEeFfGg");
+          it.printf(1, 100, id(taoma30), 0xFFFF, "AaBbCcDdEeFfGg");
+          
+
+sensor:
+  - platform: homeassistant
+    id: outside_temperature
+    entity_id: sensor.yorkhome_realfeel_temperature
+    # internal: true
+    
+  - platform: homeassistant
+    id: internal_temperature
+    entity_id: sensor.kitchen_temperature
+
+  - platform: dht
+    pin: GPIO12
+    id: local_sensor
+    temperature:
+      name: "Thermostat Temperature"
+      id: local_temperature
+    humidity:
+      name: "Thermostat Humidity"
+      id: local_humidity
+    update_interval: 60s
+    
+  - platform: template
+    name: "Temperature Sensor"
+    id: temp_sensor_combined
+    lambda: |-
+      if (id(ha_online) == true) {
+        // return ha temperature
+        return id(internal_temperature).state;
+      } else {
+        // return internal temperature
+        return id(local_temperature).state;
+      }
+    update_interval: 60s
+    
+  - platform: rotary_encoder
+    name: "Rotary Encoder"
+    pin_a: GPIO37
+    pin_b: GPIO38
+  
+
+
+text_sensor:
+  - platform: homeassistant
+    id: curent_weather
+    entity_id: weather.yorkhome
+    # internal: true
+
+switch:
+  - platform: gpio
+    pin: GPIO4
+    name: "Backlight"
+    id: backlight
+    
+  - platform: gpio
+    pin: GPIO2
+    name: "Heater Relay"
+    id: heater_relay
+
+binary_sensor:  
+  - platform: gpio
+    id: toggleBL
+    pin: GPIO0
+    on_press:
+      then:
+        - switch.toggle: backlight
+        
+  - platform: gpio
+    pin: GPIO39
+    name: "Rotary Switch Button"
+    id: rotarysw_button
+
+  - platform: gpio
+    pin: GPIO35
+    name: "Page"
+    id: page
+    internal: true
+    on_press:
+      then:
+        - display.page.show_next: st7789vdisplay
+
+
+interval:
+  - interval: 5s
+    then:
+     - if:
+        condition:
+          api.connected:
+        then:
+          - globals.set:
+              id: ha_online
+              value: 'true'
+        else:
+          - globals.set:
+              id: ha_online
+              value: 'false'    
+time:
+  - platform: homeassistant
+    id: esptime
+
+climate:
+  - platform: bang_bang
+    id: heating_controller
+    name: "Heating Controller"
+    sensor: temp_sensor_combined
+    default_target_temperature_low: 20 
+    default_target_temperature_high: 22 
+
+    heat_action:
+      - switch.turn_on: heater_relay
+    idle_action:
+      - switch.turn_off: heater_relay
