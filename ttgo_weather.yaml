@@ -1,3 +1,6 @@
+# substitutions:
+
+
 esphome:
   name: ttgo_weather
   platform: ESP32
@@ -9,6 +12,12 @@ web_server:
 wifi:
   ssid: !secret WIFI_SSID
   password: !secret WIFI_Password
+  domain: .lan
+  manual_ip:
+    static_ip: 192.168.1.60
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+
 
 # Enable logging
 logger:
@@ -25,6 +34,16 @@ globals:
   - id: ha_online
     type: bool
     initial_value: 'false'
+  - id: activeDisplayPage
+    type: int
+    initial_value: '1'
+  - id: programmingMode
+    type: int
+    initial_value: '0'
+    # 0: unset
+    # 1: DAY1
+    # 2: DAY2
+    # 3: NIGHT
 
 spi:
   clk_pin: GPIO18
@@ -146,7 +165,7 @@ display:
     cs_pin: GPIO5
     backlight_pin: GPIO4
     brightness: 25%
-    update_interval: 5s
+    update_interval: 1s
     pages:
       - id: page1
         # weather 
@@ -261,18 +280,14 @@ display:
           }
           
           // Thermostat
-
           it.printf(1, 80, id(taoma40),  0xFFFF, TextAlign::BASELINE_LEFT, "%.1f°C", id(heating_controller).target_temperature);
           it.printf(10, 85, id(taoma20),  0xFFFF, "Target");
           
           it.printf(1, 150, id(taoma40), 0xFFFF, TextAlign::BASELINE_LEFT, "%.1f°C", id(heating_controller).current_temperature);
           it.printf(10, 155, id(taoma20),  0xFFFF, "Current");
           
-          
-          
+          // Thermostat mode
           auto hcMode = id(heating_controller).mode;
-          
-          
           switch(hcMode) {
             case CLIMATE_MODE_OFF:
               // Off
@@ -296,7 +311,26 @@ display:
               break;
           }
 
-         
+           // HA Automation mode
+           switch (id(programmingMode)) {
+            case 0:
+              it.printf(135, 210, id(taoma20), 0xFC20, TextAlign::BASELINE_RIGHT, "     ");
+              break;
+            case 1:
+              it.printf(135, 210, id(taoma20), 0xFC20, TextAlign::BASELINE_RIGHT, "Off");
+              break;
+            case 2:
+              it.printf(135, 210, id(taoma20), 0xFC20, TextAlign::BASELINE_RIGHT, "Day");
+              break;
+            case 3:
+              it.printf(135, 210, id(taoma20), 0xFC20, TextAlign::BASELINE_RIGHT, "Night");
+              break;
+            case 4:
+              it.printf(135, 210, id(taoma20), 0xFC20, TextAlign::BASELINE_RIGHT, "Manual");
+              break;
+            default:
+              break;
+           }
           
           //Time
           it.strftime(67, 235, id(taoma20), 0x767E, TextAlign::BASELINE_CENTER, "%H:%M", id(esptime).now());
@@ -356,6 +390,25 @@ text_sensor:
     entity_id: weather.yorkhome
     # internal: true
 
+  - platform: homeassistant
+    id: currentHeatingProgram
+    entity_id: input_select.actual_heating_mode
+    on_value:
+      then:
+        - lambda: |-
+            if (x == "Off") { 
+              id(programmingMode) = 1;
+            } else if (x == "ECO") {
+                id(programmingMode) = 3;
+            } else if (x == "DAY") {
+                id(programmingMode) = 2;
+            } else if (x == "Manual") {
+                id(programmingMode) = 4;
+            } else {
+                id(programmingMode) = 0;
+            }
+
+
 switch:
   - platform: gpio
     pin: GPIO4
@@ -371,6 +424,9 @@ binary_sensor:
   - platform: gpio
     id: toggleBL
     pin: GPIO0
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
     on_press:
       then:
         - switch.toggle: backlight
@@ -385,6 +441,9 @@ binary_sensor:
     name: "Page"
     id: page
     internal: true
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
     on_press:
       then:
         - display.page.show_next: st7789vdisplay
